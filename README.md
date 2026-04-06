@@ -10,7 +10,7 @@ O projeto tem como finalidade conectar doadores a instituições e beneficiário
 
 A proposta foi pensada para funcionar em dois contextos:
 
-- **Painel desktop/web da ONG**: gerenciamento administrativo
+- **Painel desktop da ONG**: gerenciamento administrativo
 - **Aplicativo mobile do doador**: registro e acompanhamento de doações
 
 Esta API representa o backend central do sistema, responsável por disponibilizar os dados e regras de negócio para ambas as interfaces.
