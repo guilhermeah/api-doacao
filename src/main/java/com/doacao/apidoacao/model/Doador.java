@@ -1,5 +1,6 @@
 package com.doacao.apidoacao.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -47,7 +48,15 @@ public class Doador {
     @Column(length = 10)
     private String cep;
 
+    @Column(name = "foto_url", length = 255)
+    private String fotoUrl;
+
     private LocalDateTime dataCadastro;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_usuario")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "senha"})
+    private Usuario usuario;
 
     @PrePersist
     public void prePersist() {
@@ -158,6 +167,9 @@ public class Doador {
         this.cep = cep;
     }
 
+    public String getFotoUrl() { return fotoUrl; }
+    public void setFotoUrl(String fotoUrl) { this.fotoUrl = fotoUrl; }
+
     public LocalDateTime getDataCadastro() {
         return dataCadastro;
     }
@@ -165,4 +177,7 @@ public class Doador {
     public void setDataCadastro(LocalDateTime dataCadastro) {
         this.dataCadastro = dataCadastro;
     }
+
+    public Usuario getUsuario() { return usuario; }
+    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
 }

@@ -1,5 +1,6 @@
 package com.doacao.apidoacao.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,13 +13,22 @@ public class Doacao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idDoacao;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_doador", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Doador doador;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_ong", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Ong ong;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_campanha")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Campanha campanha;
 
     private LocalDateTime dataDoacao;
 
@@ -45,6 +55,8 @@ public class Doacao {
         }
     }
 
+    // GETTERS E SETTERS
+
     public Long getIdDoacao() {
         return idDoacao;
     }
@@ -67,6 +79,14 @@ public class Doacao {
 
     public void setOng(Ong ong) {
         this.ong = ong;
+    }
+
+    public Campanha getCampanha() {
+        return campanha;
+    }
+
+    public void setCampanha(Campanha campanha) {
+        this.campanha = campanha;
     }
 
     public LocalDateTime getDataDoacao() {
