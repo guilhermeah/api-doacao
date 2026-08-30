@@ -2,6 +2,7 @@ package com.doacao.apidoacao.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Email;
 
 public class DoadorRequestDTO {
 
@@ -13,7 +14,12 @@ public class DoadorRequestDTO {
     private String nome;
 
     private String cpfCnpj;
+
+    @Email(message = "E-mail inválido")
     private String email;
+
+    @Size(min = 6, message = "A senha deve ter no mínimo 6 caracteres")
+    private String senha;
     private String telefone;
     private String endereco;
     private String numero;
@@ -54,6 +60,9 @@ public class DoadorRequestDTO {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
 
     public String getTelefone() {
         return telefone;

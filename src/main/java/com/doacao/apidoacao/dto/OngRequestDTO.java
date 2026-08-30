@@ -1,10 +1,9 @@
 package com.doacao.apidoacao.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 public class OngRequestDTO {
 
-    @NotBlank(message = "A razão social é obrigatória")
+    private Long idUsuario;
+
     private String razaoSocial;
 
     private String nomeFantasia;
@@ -21,6 +20,7 @@ public class OngRequestDTO {
     private String cep;
     private String areaAtuacao;
     private String statusOng;
+    private String chavePix;
 
     public String getRazaoSocial() {
         return razaoSocial;
@@ -132,6 +132,17 @@ public class OngRequestDTO {
 
     public void setAreaAtuacao(String areaAtuacao) {
         this.areaAtuacao = areaAtuacao;
+    }
+
+    public Long getIdUsuario() { return idUsuario; }
+    public void setIdUsuario(Long idUsuario) { this.idUsuario = idUsuario; }
+
+    public String getChavePix() {
+        return chavePix;
+    }
+
+    public void setChavePix(String chavePix) {
+        this.chavePix = chavePix;
     }
 
     public String getStatusOng() {

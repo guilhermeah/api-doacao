@@ -1,5 +1,6 @@
 package com.doacao.apidoacao.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -11,7 +12,12 @@ public class Ong {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idOng;
 
-    @Column(nullable = false, length = 150)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario")
+    @JsonIgnore
+    private Usuario usuario;
+
+    @Column(length = 150)
     private String razaoSocial;
 
     @Column(length = 120)
@@ -56,6 +62,13 @@ public class Ong {
     @Column(length = 20)
     private String statusOng;
 
+    @Column(name = "logo_url", length = 255)
+    private String logoUrl;
+
+    /** Chave PIX da ONG: e para ela que o QR Code das doacoes financeiras aponta. */
+    @Column(name = "chave_pix", length = 100)
+    private String chavePix;
+
     private LocalDateTime dataCadastro;
 
     @PrePersist
@@ -72,6 +85,14 @@ public class Ong {
 
     public void setIdOng(Long idOng) {
         this.idOng = idOng;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
     public String getRazaoSocial() {
@@ -192,6 +213,22 @@ public class Ong {
 
     public void setStatusOng(String statusOng) {
         this.statusOng = statusOng;
+    }
+
+    public String getChavePix() {
+        return chavePix;
+    }
+
+    public void setChavePix(String chavePix) {
+        this.chavePix = chavePix;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
     }
 
     public LocalDateTime getDataCadastro() {

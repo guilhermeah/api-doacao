@@ -3,6 +3,7 @@ package com.doacao.apidoacao.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.util.List;
 
 public class DoacaoRequestDTO {
 
@@ -12,6 +13,8 @@ public class DoacaoRequestDTO {
     @NotNull(message = "O id da ONG é obrigatório")
     private Long idOng;
 
+    private Long idCampanha;
+
     @NotBlank(message = "O tipo da doação é obrigatório")
     private String tipoDoacao;
 
@@ -19,6 +22,7 @@ public class DoacaoRequestDTO {
     private BigDecimal valorTotal;
     private String statusDoacao;
     private String observacoes;
+    private List<DoacaoItemRequestDTO> itens;
 
     public Long getIdDoador() {
         return idDoador;
@@ -34,6 +38,14 @@ public class DoacaoRequestDTO {
 
     public void setIdOng(Long idOng) {
         this.idOng = idOng;
+    }
+
+    public Long getIdCampanha() {
+        return idCampanha;
+    }
+
+    public void setIdCampanha(Long idCampanha) {
+        this.idCampanha = idCampanha;
     }
 
     public String getTipoDoacao() {
@@ -75,4 +87,7 @@ public class DoacaoRequestDTO {
     public void setObservacoes(String observacoes) {
         this.observacoes = observacoes;
     }
+
+    public List<DoacaoItemRequestDTO> getItens() { return itens; }
+    public void setItens(List<DoacaoItemRequestDTO> itens) { this.itens = itens; }
 }
