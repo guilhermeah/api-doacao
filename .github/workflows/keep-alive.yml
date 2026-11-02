@@ -1,0 +1,22 @@
+name: Keep Alive — Render API
+
+on:
+  schedule:
+    # Bate na API a cada 10 minutos para evitar cold start no Render free tier
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # permite rodar manualmente pelo GitHub se precisar
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            https://api-doacao-ola7.onrender.com/campanhas)
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ API respondendo normalmente"
+          else
+            echo "⚠️  API retornou status $STATUS"
+          fi
