@@ -6,9 +6,11 @@ import com.doacao.apidoacao.exception.BusinessException;
 import com.doacao.apidoacao.exception.ResourceNotFoundException;
 import com.doacao.apidoacao.model.*;
 import com.doacao.apidoacao.repository.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -65,13 +67,13 @@ public class DoacaoService {
 
         validarTipoValor(dto);
 
+        boolean ehFinanceira = ehFinanceira(dto.getTipoDoacao());
+
         Campanha campanha = null;
-        boolean novoDoadorNaCampanha = false;
         if (dto.getIdCampanha() != null) {
             campanha = campanhaService.buscarPorId(dto.getIdCampanha());
             campanhaService.validarRecebeDoacao(campanha);
             campanhaService.validarTipoDoacaoCompativel(campanha, dto.getTipoDoacao());
-            novoDoadorNaCampanha = !doacaoRepository.existsByCampanhaAndDoador(campanha, doador);
         }
 
         Doacao doacao = new Doacao();
@@ -81,28 +83,113 @@ public class DoacaoService {
         doacao.setTipoDoacao(dto.getTipoDoacao());
         doacao.setDescricaoGeral(dto.getDescricaoGeral());
         doacao.setValorTotal(dto.getValorTotal());
-        doacao.setStatusDoacao(dto.getStatusDoacao());
+        // A financeira nasce pendente: só entra no total da campanha depois que o
+        // pagamento do PIX for confirmado (ou expira sozinha no prazo).
+        doacao.setStatusDoacao(ehFinanceira ? Doacao.STATUS_PENDENTE : dto.getStatusDoacao());
         doacao.setObservacoes(dto.getObservacoes());
 
         doacao = doacaoRepository.save(doacao);
 
-        boolean ehFinanceira = "financeira".equalsIgnoreCase(dto.getTipoDoacao())
-                || "monetaria".equalsIgnoreCase(dto.getTipoDoacao());
         if (!ehFinanceira && dto.getItens() != null && !dto.getItens().isEmpty()) {
             salvarItens(doacao, dto.getItens());
         }
 
+        // Recalcula sempre: a financeira nasce pendente e nao entra na soma, mas
+        // deixar o recalculo aqui garante que a campanha nunca fique desalinhada
+        // da tabela de doacoes, mesmo que o tipo mude no futuro.
         if (campanha != null) {
-            campanhaService.atualizarArrecadacao(campanha.getIdCampanha(), doacao.getValorTotal(), novoDoadorNaCampanha);
+            doacaoRepository.flush();
+            campanhaService.recalcularArrecadacao(campanha.getIdCampanha());
         }
 
-        try {
-            notificacaoService.criarNotificacaoDoacao(doacao);
-        } catch (Exception e) {
-            // notificação não deve impedir o registro da doação
+        if (!ehFinanceira) {
+            notificar(doacao);
         }
 
         return doacao;
+    }
+
+    /**
+     * Confirma que o doador pagou o PIX: aí sim a doação entra no total da
+     * campanha e a ONG é notificada.
+     */
+    @Transactional
+    public Doacao confirmarPagamento(Long id) {
+        Doacao doacao = buscarPorId(id);
+
+        if (!ehFinanceira(doacao.getTipoDoacao())) {
+            throw new BusinessException("Só doações financeiras precisam de confirmação de pagamento");
+        }
+
+        // idempotente: clicar duas vezes em "já paguei" não soma duas vezes
+        if (Doacao.STATUS_CONFIRMADA.equalsIgnoreCase(doacao.getStatusDoacao())) {
+            return doacao;
+        }
+
+        if (Doacao.STATUS_EXPIRADA.equalsIgnoreCase(doacao.getStatusDoacao())) {
+            throw new BusinessException("O prazo para pagar este PIX expirou. Faça uma nova doação.");
+        }
+
+        if (!doacao.isAguardandoPagamento()) {
+            throw new BusinessException("Esta doação não está aguardando pagamento");
+        }
+
+        if (doacao.isPagamentoExpirado()) {
+            doacao.setStatusDoacao(Doacao.STATUS_EXPIRADA);
+            doacaoRepository.save(doacao);
+            throw new BusinessException("O prazo de " + Doacao.MINUTOS_PARA_PAGAR
+                    + " minutos para pagar expirou. Faça uma nova doação.");
+        }
+
+        doacao.setStatusDoacao(Doacao.STATUS_CONFIRMADA);
+        doacao = doacaoRepository.save(doacao);
+
+        Campanha campanha = doacao.getCampanha();
+        if (campanha != null) {
+            doacaoRepository.flush();
+            campanhaService.recalcularArrecadacao(campanha.getIdCampanha());
+        }
+
+        notificar(doacao);
+
+        return doacao;
+    }
+
+    /** Marca uma doação pendente como expirada (o contador do PIX zerou). */
+    @Transactional
+    public Doacao expirar(Long id) {
+        Doacao doacao = buscarPorId(id);
+        if (doacao.isAguardandoPagamento()) {
+            doacao.setStatusDoacao(Doacao.STATUS_EXPIRADA);
+            doacao = doacaoRepository.save(doacao);
+            doacaoRepository.flush();
+            if (doacao.getCampanha() != null) {
+                campanhaService.recalcularArrecadacao(doacao.getCampanha().getIdCampanha());
+            }
+        }
+        return doacao;
+    }
+
+    /**
+     * Rede de segurança: se o doador fechou o navegador, ninguém avisa o back
+     * que o contador zerou. Uma vez por minuto as pendentes vencidas caem.
+     */
+    @Scheduled(fixedDelay = 60_000L)
+    @Transactional
+    public void expirarPendentesVencidas() {
+        LocalDateTime limite = LocalDateTime.now().minusMinutes(Doacao.MINUTOS_PARA_PAGAR);
+        List<Doacao> vencidas = doacaoRepository.buscarPendentesVencidas(limite);
+        if (vencidas.isEmpty()) return;
+        vencidas.forEach(d -> d.setStatusDoacao(Doacao.STATUS_EXPIRADA));
+        doacaoRepository.saveAll(vencidas);
+        doacaoRepository.flush();
+
+        vencidas.stream()
+                .map(Doacao::getCampanha)
+                .filter(java.util.Objects::nonNull)
+                .map(Campanha::getIdCampanha)
+                .distinct()
+                .forEach(campanhaService::recalcularArrecadacao);
     }
 
     @Transactional
@@ -117,6 +204,8 @@ public class DoacaoService {
 
         validarTipoValor(dto);
 
+        Campanha campanhaAnterior = doacao.getCampanha();
+
         Campanha campanha = null;
         if (dto.getIdCampanha() != null) {
             campanha = campanhaService.buscarPorId(dto.getIdCampanha());
@@ -128,16 +217,30 @@ public class DoacaoService {
         doacao.setTipoDoacao(dto.getTipoDoacao());
         doacao.setDescricaoGeral(dto.getDescricaoGeral());
         doacao.setValorTotal(dto.getValorTotal());
-        doacao.setStatusDoacao(dto.getStatusDoacao());
+        // status de doação aguardando/expirada só muda pelo fluxo de pagamento
+        // (confirmarPagamento / expirar), nunca por um PUT solto
+        if (contabilizada(doacao.getStatusDoacao())) {
+            doacao.setStatusDoacao(dto.getStatusDoacao());
+        }
         doacao.setObservacoes(dto.getObservacoes());
 
         doacao = doacaoRepository.save(doacao);
 
-        boolean ehFinanceiraUpd = "financeira".equalsIgnoreCase(dto.getTipoDoacao())
-                || "monetaria".equalsIgnoreCase(dto.getTipoDoacao());
+        boolean ehFinanceiraUpd = ehFinanceira(dto.getTipoDoacao());
         if (!ehFinanceiraUpd && dto.getItens() != null && !dto.getItens().isEmpty()) {
             doacaoItemRepository.deleteAll(doacaoItemRepository.findByDoacaoIdDoacao(id));
             salvarItens(doacao, dto.getItens());
+        }
+
+        // Um PUT pode mudar valor, status ou ate a campanha da doacao. Recalcula
+        // as duas pontas: a campanha de onde ela saiu e a campanha onde ela esta.
+        doacaoRepository.flush();
+        if (campanhaAnterior != null) {
+            campanhaService.recalcularArrecadacao(campanhaAnterior.getIdCampanha());
+        }
+        if (campanha != null && (campanhaAnterior == null
+                || !campanha.getIdCampanha().equals(campanhaAnterior.getIdCampanha()))) {
+            campanhaService.recalcularArrecadacao(campanha.getIdCampanha());
         }
 
         return doacao;
@@ -148,8 +251,6 @@ public class DoacaoService {
         Doacao doacao = buscarPorId(id);
 
         Campanha campanha = doacao.getCampanha();
-        Doador doador = doacao.getDoador();
-        java.math.BigDecimal valorEstornado = doacao.getValorTotal();
 
         // os itens precisam sair antes, senao a FK impede a exclusao da doacao
         doacaoItemRepository.deleteAll(doacaoItemRepository.findByDoacaoIdDoacao(id));
@@ -157,9 +258,26 @@ public class DoacaoService {
         doacaoRepository.flush();
 
         if (campanha != null) {
-            boolean doadorSemOutrasDoacoes = doador != null
-                    && !doacaoRepository.existsByCampanhaAndDoador(campanha, doador);
-            campanhaService.estornarArrecadacao(campanha.getIdCampanha(), valorEstornado, doadorSemOutrasDoacoes);
+            campanhaService.recalcularArrecadacao(campanha.getIdCampanha());
+        }
+    }
+
+    private boolean ehFinanceira(String tipoDoacao) {
+        return "financeira".equalsIgnoreCase(tipoDoacao) || "monetaria".equalsIgnoreCase(tipoDoacao);
+    }
+
+    private boolean contabilizada(String status) {
+        String s = status == null ? "" : status.toLowerCase();
+        return !s.equals(Doacao.STATUS_PENDENTE)
+                && !s.equals(Doacao.STATUS_EXPIRADA)
+                && !s.equals("cancelada");
+    }
+
+    private void notificar(Doacao doacao) {
+        try {
+            notificacaoService.criarNotificacaoDoacao(doacao);
+        } catch (Exception e) {
+            // notificação não deve impedir o registro da doação
         }
     }
 

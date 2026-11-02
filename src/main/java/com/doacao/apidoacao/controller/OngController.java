@@ -5,6 +5,7 @@ import com.doacao.apidoacao.dto.CampanhaResponseDTO;
 import com.doacao.apidoacao.dto.CampanhaResumoDTO;
 import com.doacao.apidoacao.dto.OngDashboardDTO;
 import com.doacao.apidoacao.dto.OngRequestDTO;
+import com.doacao.apidoacao.model.Doacao;
 import com.doacao.apidoacao.model.Ong;
 import com.doacao.apidoacao.service.CampanhaService;
 import com.doacao.apidoacao.service.FileStorageService;
@@ -82,6 +83,12 @@ public class OngController {
     public Ong uploadFoto(@PathVariable Long id, @RequestParam("arquivo") MultipartFile arquivo) {
         String url = fileStorageService.salvarFotoOng(id, arquivo);
         return ongService.atualizarFoto(id, url);
+    }
+
+    @GetMapping("/{id}/doacoes")
+    @Operation(summary = "Lista as doações recebidas pela ONG")
+    public List<Doacao> listarDoacoes(@PathVariable Long id) {
+        return ongService.listarDoacoes(id);
     }
 
     @GetMapping("/{id}/dashboard")

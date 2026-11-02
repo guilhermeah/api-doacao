@@ -8,6 +8,7 @@ import com.doacao.apidoacao.model.Campanha;
 import com.doacao.apidoacao.model.Ong;
 import com.doacao.apidoacao.repository.CampanhaRepository;
 import com.doacao.apidoacao.repository.DoacaoItemRepository;
+import com.doacao.apidoacao.repository.DoacaoRepository;
 import com.doacao.apidoacao.repository.OngRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,12 +24,14 @@ public class CampanhaService {
     private final CampanhaRepository campanhaRepository;
     private final OngRepository ongRepository;
     private final DoacaoItemRepository doacaoItemRepository;
+    private final DoacaoRepository doacaoRepository;
 
     public CampanhaService(CampanhaRepository campanhaRepository, OngRepository ongRepository,
-                           DoacaoItemRepository doacaoItemRepository) {
+                           DoacaoItemRepository doacaoItemRepository, DoacaoRepository doacaoRepository) {
         this.campanhaRepository = campanhaRepository;
         this.ongRepository = ongRepository;
         this.doacaoItemRepository = doacaoItemRepository;
+        this.doacaoRepository = doacaoRepository;
     }
 
     public List<Campanha> listarTodas() {
@@ -88,42 +91,53 @@ public class CampanhaService {
         return campanhaRepository.findByStatus("ativa");
     }
 
+    /**
+     * Reescreve campanhas.valor_arrecadado e quantidade_doadores a partir das
+     * doacoes contabilizadas da campanha.
+     *
+     * Antes esses dois campos eram mantidos por soma e subtracao a cada evento.
+     * Bastava uma doacao editada por PUT, um erro no meio de uma transacao ou um
+     * total escrito na mao para o numero descolar da tabela de doacoes e nunca
+     * mais voltar — era essa a divergencia entre o dashboard e a tela de
+     * "Doacoes Recebidas". Recalcular custa duas consultas agregadas e mantem a
+     * tabela de doacoes como unica fonte da verdade.
+     */
     @Transactional
-    public void atualizarArrecadacao(Long idCampanha, BigDecimal valorDoacao, boolean novoDoador) {
-        Campanha campanha = buscarPorId(idCampanha);
+    public void recalcularArrecadacao(Long idCampanha) {
+        if (idCampanha == null) return;
+        recalcularArrecadacao(buscarPorId(idCampanha));
+    }
 
-        BigDecimal valor = valorDoacao != null ? valorDoacao : BigDecimal.ZERO;
-        BigDecimal atual = campanha.getValorArrecadado() != null ? campanha.getValorArrecadado() : BigDecimal.ZERO;
-        campanha.setValorArrecadado(atual.add(valor));
+    @Transactional
+    public void recalcularArrecadacao(Campanha campanha) {
+        if (campanha == null) return;
 
-        int qtdDoadores = campanha.getQuantidadeDoadores() != null ? campanha.getQuantidadeDoadores() : 0;
-        if (novoDoador) {
-            campanha.setQuantidadeDoadores(qtdDoadores + 1);
-        }
+        BigDecimal total = doacaoRepository.somarValorArrecadadoPorCampanha(campanha);
+        long doadores = doacaoRepository.contarDoadoresDistintosPorCampanha(campanha);
+
+        campanha.setValorArrecadado(total != null ? total : BigDecimal.ZERO);
+        campanha.setQuantidadeDoadores((int) doadores);
 
         campanhaRepository.save(campanha);
     }
 
     /**
-     * Desfaz na campanha o efeito de uma doacao que foi excluida:
-     * subtrai o valor arrecadado (nunca deixando negativo) e, quando o doador
-     * nao tem mais nenhuma doacao naquela campanha, tira 1 do contador.
+     * @deprecated os parametros de delta nao sao mais usados: o total e sempre
+     * recalculado a partir das doacoes. Mantido para nao quebrar chamadas antigas.
      */
+    @Deprecated
+    @Transactional
+    public void atualizarArrecadacao(Long idCampanha, BigDecimal valorDoacao, boolean novoDoador) {
+        recalcularArrecadacao(idCampanha);
+    }
+
+    /**
+     * @deprecated idem: estornar virou recalcular.
+     */
+    @Deprecated
     @Transactional
     public void estornarArrecadacao(Long idCampanha, BigDecimal valorDoacao, boolean removeDoador) {
-        Campanha campanha = buscarPorId(idCampanha);
-
-        BigDecimal valor = valorDoacao != null ? valorDoacao : BigDecimal.ZERO;
-        BigDecimal atual = campanha.getValorArrecadado() != null ? campanha.getValorArrecadado() : BigDecimal.ZERO;
-        BigDecimal novo = atual.subtract(valor);
-        campanha.setValorArrecadado(novo.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : novo);
-
-        int qtdDoadores = campanha.getQuantidadeDoadores() != null ? campanha.getQuantidadeDoadores() : 0;
-        if (removeDoador && qtdDoadores > 0) {
-            campanha.setQuantidadeDoadores(qtdDoadores - 1);
-        }
-
-        campanhaRepository.save(campanha);
+        recalcularArrecadacao(idCampanha);
     }
 
     public Campanha atualizarImagem(Long id, String imagemUrl) {

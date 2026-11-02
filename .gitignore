@@ -15,3 +15,4 @@ uploads/
 # Environment
 .env
 *.env
+application-local.properties

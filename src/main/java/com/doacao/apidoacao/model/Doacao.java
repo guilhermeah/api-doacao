@@ -9,6 +9,13 @@ import java.time.LocalDateTime;
 @Table(name = "doacoes")
 public class Doacao {
 
+    /** Prazo que o doador tem para pagar o PIX de uma doação financeira. */
+    public static final int MINUTOS_PARA_PAGAR = 15;
+
+    public static final String STATUS_PENDENTE = "pendente";
+    public static final String STATUS_CONFIRMADA = "confirmada";
+    public static final String STATUS_EXPIRADA = "expirada";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idDoacao;
@@ -135,5 +142,36 @@ public class Doacao {
 
     public void setObservacoes(String observacoes) {
         this.observacoes = observacoes;
+    }
+
+    // ── Prazo de pagamento (calculado, não fica no banco) ────────────────────
+    // A expiração é sempre dataDoacao + MINUTOS_PARA_PAGAR, então não precisa
+    // de coluna nova: quem manda é o relógio do servidor.
+
+    @Transient
+    public boolean isAguardandoPagamento() {
+        return STATUS_PENDENTE.equalsIgnoreCase(statusDoacao);
+    }
+
+    /** Momento em que o PIX desta doação expira. Null quando não está pendente. */
+    @Transient
+    public LocalDateTime getExpiraEm() {
+        if (!isAguardandoPagamento() || dataDoacao == null) return null;
+        return dataDoacao.plusMinutes(MINUTOS_PARA_PAGAR);
+    }
+
+    /** Segundos que faltam para o PIX expirar (0 quando já venceu). Null quando não está pendente. */
+    @Transient
+    public Long getSegundosRestantes() {
+        LocalDateTime expiraEm = getExpiraEm();
+        if (expiraEm == null) return null;
+        long restantes = java.time.Duration.between(LocalDateTime.now(), expiraEm).getSeconds();
+        return restantes > 0 ? restantes : 0L;
+    }
+
+    @Transient
+    public boolean isPagamentoExpirado() {
+        LocalDateTime expiraEm = getExpiraEm();
+        return expiraEm != null && LocalDateTime.now().isAfter(expiraEm);
     }
 }

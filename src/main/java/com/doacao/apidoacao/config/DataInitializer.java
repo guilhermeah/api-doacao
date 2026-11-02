@@ -26,11 +26,11 @@ public class DataInitializer implements CommandLineRunner {
         if (total == 0) {
             System.out.println("[DataInitializer] Nenhum usuário encontrado. Criando usuários padrão...");
             usuarioRepository.saveAll(List.of(
-                    build("Admin Sistema", "admin@doacao.com",  "123456", "admin"),
-                    build("João Silva",    "joao@doacao.com",   "123456", "funcionario"),
-                    build("Maria Souza",   "maria@doacao.com",  "123456", "voluntario"),
-                    build("Pedro Lima",    "pedro@doacao.com",  "123456", "funcionario"),
-                    build("Ana Costa",     "ana@doacao.com",    "123456", "voluntario")
+                    build("Admin Sistema", "admin@doacao.com",  "Mudar@321", "admin"),
+                    build("João Silva",    "joao@doacao.com",   "Mudar@321", "funcionario"),
+                    build("Maria Souza",   "maria@doacao.com",  "Mudar@321", "voluntario"),
+                    build("Pedro Lima",    "pedro@doacao.com",  "Mudar@321", "funcionario"),
+                    build("Ana Costa",     "ana@doacao.com",    "Mudar@321", "voluntario")
             ));
             System.out.println("[DataInitializer] Usuários padrão criados. Senha de todos: 123456");
         } else {

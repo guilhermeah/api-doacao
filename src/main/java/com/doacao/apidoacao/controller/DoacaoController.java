@@ -59,6 +59,18 @@ public class DoacaoController {
         return doacaoService.criar(dto);
     }
 
+    @PostMapping("/doacoes/{id}/confirmar-pagamento")
+    @Operation(summary = "Confirma o pagamento do PIX de uma doação financeira pendente")
+    public Doacao confirmarPagamento(@PathVariable Long id) {
+        return doacaoService.confirmarPagamento(id);
+    }
+
+    @PostMapping("/doacoes/{id}/expirar")
+    @Operation(summary = "Marca como expirada uma doação cujo prazo de pagamento acabou")
+    public Doacao expirar(@PathVariable Long id) {
+        return doacaoService.expirar(id);
+    }
+
     @PutMapping("/doacoes/{id}")
     @Operation(summary = "Atualiza uma doação")
     public Doacao atualizar(@PathVariable Long id, @RequestBody @Valid DoacaoRequestDTO dto) {

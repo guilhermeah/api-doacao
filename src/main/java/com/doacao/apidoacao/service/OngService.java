@@ -4,6 +4,7 @@ import com.doacao.apidoacao.dto.OngDashboardDTO;
 import com.doacao.apidoacao.dto.OngRequestDTO;
 import com.doacao.apidoacao.exception.BusinessException;
 import com.doacao.apidoacao.exception.ResourceNotFoundException;
+import com.doacao.apidoacao.model.Doacao;
 import com.doacao.apidoacao.model.Ong;
 import com.doacao.apidoacao.model.Usuario;
 import com.doacao.apidoacao.repository.CampanhaRepository;
@@ -84,15 +85,29 @@ public class OngService {
         ongRepository.delete(ong);
     }
 
+    public List<Doacao> listarDoacoes(Long id) {
+        Ong ong = buscarPorId(id);
+        return doacaoRepository.findByOng(ong);
+    }
+
     public OngDashboardDTO dashboard(Long id) {
         Ong ong = buscarPorId(id);
 
-        long totalCampanhas = campanhaRepository.findByOng(ong).size();
-        long campanhasAtivas = campanhaRepository.findByOng(ong).stream()
+        List<com.doacao.apidoacao.model.Campanha> campanhas = campanhaRepository.findByOng(ong);
+        long totalCampanhas = campanhas.size();
+        long campanhasAtivas = campanhas.stream()
                 .filter(c -> "ativa".equalsIgnoreCase(c.getStatus()))
                 .count();
         long totalDoacoes = doacaoRepository.countByOng(ong);
-        var valorArrecadado = doacaoRepository.somarValorArrecadadoPorOng(ong);
+
+        // Soma direto da tabela de doações, e não de campanhas.valor_arrecadado.
+        // Os dois deveriam bater (CampanhaService.recalcularArrecadacao mantém a
+        // campanha alinhada), mas somar as doações também cobre a doação que não
+        // está ligada a nenhuma campanha — que não aparece em campanha nenhuma e
+        // fazia este card divergir da tela de "Doações Recebidas", que sempre
+        // somou as doações.
+        java.math.BigDecimal valorArrecadado = doacaoRepository.somarValorArrecadadoPorOng(ong);
+        if (valorArrecadado == null) valorArrecadado = java.math.BigDecimal.ZERO;
 
         String nomeOng = ong.getNomeFantasia() != null ? ong.getNomeFantasia() : ong.getRazaoSocial();
         return new OngDashboardDTO(ong.getIdOng(), nomeOng, totalCampanhas, campanhasAtivas, totalDoacoes, valorArrecadado);
