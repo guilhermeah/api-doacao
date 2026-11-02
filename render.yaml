@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: api-doacao
+    runtime: java
+    plan: free
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -jar target/api-doacao-0.0.1-SNAPSHOT.jar
+    healthCheckPath: /campanhas
+    envVars:
+      - key: PGHOST
+        fromDatabase:
+          name: doacao-db
+          property: host
+      - key: PGPORT
+        fromDatabase:
+          name: doacao-db
+          property: port
+      - key: PGDATABASE
+        fromDatabase:
+          name: doacao-db
+          property: database
+      - key: PGUSER
+        fromDatabase:
+          name: doacao-db
+          property: user
+      - key: PGPASSWORD
+        fromDatabase:
+          name: doacao-db
+          property: password
+      - key: DDL_AUTO
+        value: update
+      - key: PIX_GATEWAY
+        value: simulado
+      - key: PIX_SIMULACAO_SEGUNDOS
+        value: "20"
+      - key: CORS_ORIGINS
+        value: http://localhost:5173,http://localhost:3000
+
+databases:
+  - name: doacao-db
+    plan: free
+    databaseName: doacao
