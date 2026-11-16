@@ -15,10 +15,6 @@ public class CampanhaRequestDTO {
     @Schema(example = "1")
     private Long idOng;
 
-    @NotBlank(message = "O tipo da campanha é obrigatório")
-    @Schema(example = "financeira", description = "financeira, material ou ambas")
-    private String tipoCampanha;
-
     @NotBlank(message = "O título é obrigatório")
     @Schema(example = "Campanha do Agasalho 2026")
     private String titulo;
@@ -30,8 +26,9 @@ public class CampanhaRequestDTO {
     @Schema(example = "Arrecadar 1000 peças de roupa de frio até o fim do inverno")
     private String objetivo;
 
+    @NotNull(message = "A meta financeira é obrigatória")
     @DecimalMin(value = "0.01", message = "A meta financeira deve ser maior que zero")
-    @Schema(example = "10000.00", description = "Obrigatório para campanhas financeiras e ambas")
+    @Schema(example = "10000.00")
     private BigDecimal metaFinanceira;
 
     @Schema(example = "https://exemplo.com/imagens/campanha.jpg")
@@ -59,9 +56,6 @@ public class CampanhaRequestDTO {
     public void setIdOng(Long idOng) {
         this.idOng = idOng;
     }
-
-    public String getTipoCampanha() { return tipoCampanha; }
-    public void setTipoCampanha(String tipoCampanha) { this.tipoCampanha = tipoCampanha; }
 
     public String getTitulo() {
         return titulo;

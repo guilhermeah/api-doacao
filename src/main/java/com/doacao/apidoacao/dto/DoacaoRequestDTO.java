@@ -3,7 +3,6 @@ package com.doacao.apidoacao.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
-import java.util.List;
 
 public class DoacaoRequestDTO {
 
@@ -22,7 +21,9 @@ public class DoacaoRequestDTO {
     private BigDecimal valorTotal;
     private String statusDoacao;
     private String observacoes;
-    private List<DoacaoItemRequestDTO> itens;
+    private String modalidadeEntrega;
+    private String enderecoRetirada;
+    private String horarioDisponivel;
 
     public Long getIdDoador() {
         return idDoador;
@@ -88,6 +89,27 @@ public class DoacaoRequestDTO {
         this.observacoes = observacoes;
     }
 
-    public List<DoacaoItemRequestDTO> getItens() { return itens; }
-    public void setItens(List<DoacaoItemRequestDTO> itens) { this.itens = itens; }
+    public String getModalidadeEntrega() {
+        return modalidadeEntrega;
+    }
+
+    public void setModalidadeEntrega(String modalidadeEntrega) {
+        this.modalidadeEntrega = modalidadeEntrega;
+    }
+
+    public String getEnderecoRetirada() {
+        return enderecoRetirada;
+    }
+
+    public void setEnderecoRetirada(String enderecoRetirada) {
+        this.enderecoRetirada = enderecoRetirada;
+    }
+
+    public String getHorarioDisponivel() {
+        return horarioDisponivel;
+    }
+
+    public void setHorarioDisponivel(String horarioDisponivel) {
+        this.horarioDisponivel = horarioDisponivel;
+    }
 }

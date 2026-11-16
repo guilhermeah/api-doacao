@@ -10,7 +10,6 @@ import java.time.LocalDate;
 public class CampanhaResumoDTO {
 
     private Long idCampanha;
-    private String tipoCampanha;
     private String titulo;
     private String imagemUrl;
     private BigDecimal metaFinanceira;
@@ -23,7 +22,6 @@ public class CampanhaResumoDTO {
     public static CampanhaResumoDTO de(Campanha campanha) {
         CampanhaResumoDTO dto = new CampanhaResumoDTO();
         dto.idCampanha = campanha.getIdCampanha();
-        dto.tipoCampanha = campanha.getTipoCampanha();
         dto.titulo = campanha.getTitulo();
         dto.imagemUrl = campanha.getImagemUrl();
         dto.metaFinanceira = campanha.getMetaFinanceira();
@@ -38,8 +36,6 @@ public class CampanhaResumoDTO {
     public Long getIdCampanha() {
         return idCampanha;
     }
-
-    public String getTipoCampanha() { return tipoCampanha; }
 
     public String getTitulo() {
         return titulo;

@@ -1,6 +1,5 @@
 package com.doacao.apidoacao.controller;
 
-import com.doacao.apidoacao.dto.CampanhaItemDoadoDTO;
 import com.doacao.apidoacao.dto.CampanhaRequestDTO;
 import com.doacao.apidoacao.dto.CampanhaResponseDTO;
 import com.doacao.apidoacao.dto.CampanhaResumoDTO;
@@ -85,12 +84,6 @@ public class CampanhaController {
     @Operation(summary = "Encerra uma campanha, impedindo o recebimento de novas doações")
     public CampanhaResponseDTO encerrar(@PathVariable Long id) {
         return CampanhaResponseDTO.de(campanhaService.encerrarCampanha(id));
-    }
-
-    @GetMapping("/{id}/itens-doados")
-    @Operation(summary = "Retorna o total doado de cada item em uma campanha material")
-    public List<CampanhaItemDoadoDTO> listarItensDoadosPorCampanha(@PathVariable Long id) {
-        return campanhaService.listarItensDoadosPorCampanha(id);
     }
 
     @PostMapping("/{id}/imagem")
