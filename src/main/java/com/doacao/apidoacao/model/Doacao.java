@@ -9,24 +9,17 @@ import java.time.LocalDateTime;
 @Table(name = "doacoes")
 public class Doacao {
 
-    /** Prazo que o doador tem para pagar o PIX de uma doação financeira. */
-    public static final int MINUTOS_PARA_PAGAR = 15;
-
-    public static final String STATUS_PENDENTE = "pendente";
-    public static final String STATUS_CONFIRMADA = "confirmada";
-    public static final String STATUS_EXPIRADA = "expirada";
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idDoacao;
 
-
+    // 🔥 CORRIGIDO (EAGER + Ignore)
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_doador", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Doador doador;
 
-
+    // 🔥 CORRIGIDO (EAGER + Ignore)
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_ong", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -53,6 +46,18 @@ public class Doacao {
 
     @Column(columnDefinition = "TEXT")
     private String observacoes;
+
+    @Column(length = 20)
+    private String modalidadeEntrega; // "retirada" ou "entrega_na_ong"
+
+    @Column(columnDefinition = "TEXT")
+    private String enderecoRetirada;
+
+    @Column(length = 100)
+    private String horarioDisponivel;
+
+    @Column(columnDefinition = "TEXT")
+    private String fotosUrls; // JSON array de paths: ["uploads/doacoes/x.jpg", ...]
 
     @PrePersist
     public void prePersist() {
@@ -144,34 +149,35 @@ public class Doacao {
         this.observacoes = observacoes;
     }
 
-    // ── Prazo de pagamento (calculado, não fica no banco) ────────────────────
-    // A expiração é sempre dataDoacao + MINUTOS_PARA_PAGAR, então não precisa
-    // de coluna nova: quem manda é o relógio do servidor.
-
-    @Transient
-    public boolean isAguardandoPagamento() {
-        return STATUS_PENDENTE.equalsIgnoreCase(statusDoacao);
+    public String getModalidadeEntrega() {
+        return modalidadeEntrega;
     }
 
-    /** Momento em que o PIX desta doação expira. Null quando não está pendente. */
-    @Transient
-    public LocalDateTime getExpiraEm() {
-        if (!isAguardandoPagamento() || dataDoacao == null) return null;
-        return dataDoacao.plusMinutes(MINUTOS_PARA_PAGAR);
+    public void setModalidadeEntrega(String modalidadeEntrega) {
+        this.modalidadeEntrega = modalidadeEntrega;
     }
 
-    /** Segundos que faltam para o PIX expirar (0 quando já venceu). Null quando não está pendente. */
-    @Transient
-    public Long getSegundosRestantes() {
-        LocalDateTime expiraEm = getExpiraEm();
-        if (expiraEm == null) return null;
-        long restantes = java.time.Duration.between(LocalDateTime.now(), expiraEm).getSeconds();
-        return restantes > 0 ? restantes : 0L;
+    public String getEnderecoRetirada() {
+        return enderecoRetirada;
     }
 
-    @Transient
-    public boolean isPagamentoExpirado() {
-        LocalDateTime expiraEm = getExpiraEm();
-        return expiraEm != null && LocalDateTime.now().isAfter(expiraEm);
+    public void setEnderecoRetirada(String enderecoRetirada) {
+        this.enderecoRetirada = enderecoRetirada;
+    }
+
+    public String getHorarioDisponivel() {
+        return horarioDisponivel;
+    }
+
+    public void setHorarioDisponivel(String horarioDisponivel) {
+        this.horarioDisponivel = horarioDisponivel;
+    }
+
+    public String getFotosUrls() {
+        return fotosUrls;
+    }
+
+    public void setFotosUrls(String fotosUrls) {
+        this.fotosUrls = fotosUrls;
     }
 }

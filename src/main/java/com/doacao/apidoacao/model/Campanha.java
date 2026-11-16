@@ -29,7 +29,7 @@ public class Campanha {
     @Column(columnDefinition = "TEXT")
     private String objetivo;
 
-    @Column(name = "meta_financeira", precision = 12, scale = 2)
+    @Column(name = "meta_financeira", nullable = false, precision = 12, scale = 2)
     private BigDecimal metaFinanceira;
 
     @Column(name = "valor_arrecadado", precision = 12, scale = 2)
@@ -43,9 +43,6 @@ public class Campanha {
 
     @Column(name = "data_fim")
     private LocalDate dataFim;
-
-    @Column(name = "tipo_campanha", length = 20)
-    private String tipoCampanha;
 
     @Column(length = 20)
     private String status;
@@ -73,9 +70,6 @@ public class Campanha {
         this.updatedAt = this.createdAt;
         if (this.status == null || this.status.isBlank()) {
             this.status = "ativa";
-        }
-        if (this.tipoCampanha == null || this.tipoCampanha.isBlank()) {
-            this.tipoCampanha = "financeira";
         }
         if (this.valorArrecadado == null) {
             this.valorArrecadado = BigDecimal.ZERO;
@@ -174,9 +168,6 @@ public class Campanha {
     public void setDataFim(LocalDate dataFim) {
         this.dataFim = dataFim;
     }
-
-    public String getTipoCampanha() { return tipoCampanha; }
-    public void setTipoCampanha(String tipoCampanha) { this.tipoCampanha = tipoCampanha; }
 
     public String getStatus() {
         return status;

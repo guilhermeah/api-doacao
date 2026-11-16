@@ -13,7 +13,6 @@ public class CampanhaResponseDTO {
     private Long idCampanha;
     private Long idOng;
     private String nomeOng;
-    private String tipoCampanha;
     private String titulo;
     private String descricao;
     private String objetivo;
@@ -37,7 +36,6 @@ public class CampanhaResponseDTO {
         dto.nomeOng = campanha.getOng().getNomeFantasia() != null
                 ? campanha.getOng().getNomeFantasia()
                 : campanha.getOng().getRazaoSocial();
-        dto.tipoCampanha = campanha.getTipoCampanha();
         dto.titulo = campanha.getTitulo();
         dto.descricao = campanha.getDescricao();
         dto.objetivo = campanha.getObjetivo();
@@ -67,8 +65,6 @@ public class CampanhaResponseDTO {
     public String getNomeOng() {
         return nomeOng;
     }
-
-    public String getTipoCampanha() { return tipoCampanha; }
 
     public String getTitulo() {
         return titulo;

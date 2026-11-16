@@ -1,18 +1,12 @@
-# Maven
 target/
+.idea/
 *.class
+*.log
 *.jar
 *.war
-
-# IDE
-.idea/
-*.iml
-.vscode/
-
-# Uploads
-uploads/
-
-# Environment
-.env
-*.env
-application-local.properties
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+.mvn/wrapper/maven-wrapper.jar
